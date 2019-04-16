@@ -1,0 +1,72 @@
+name: flylinkdcpp-dc
+version: latest
+#version-script: cat $SNAPCRAFT_STAGE/version
+summary: FlylinkDC++ is a free DC++ and Torrent cient.
+description: |
+  TODO
+
+confinement: strict
+grade: devel
+architectures: [amd64]
+base: core18
+
+plugs:
+  wine-platform-plug:
+    content: wine-base-stable
+    interface: content
+    target: $SNAP/wine-platform
+    default-provider: wine-platform
+  icon-themes:
+    interface: content
+    target: $SNAP/data-dir/icons
+    default-provider: gtk-common-themes
+
+apps:
+  flylinkdcpp-dc:
+    command: flylinkdcpp-dc
+#    desktop: usr/share/applications/flylinkdcpp-dc.desktop
+    plugs:
+     - wayland
+     - x11
+     - opengl
+     - home
+     - desktop
+     - desktop-legacy
+     - network
+     - hardware-observe
+     - process-control
+     - cups-control
+     - removable-media
+     - wine-platform-plug
+
+parts:
+  flylinkdcpp-dc:
+    plugin: nil
+    source: ./src
+    override-build: |
+      snapcraftctl build
+      set -ex
+      wget -O setup.exe http://www.fly-server.ru/install/r5xx/beta/SetupFlylinkDC-x86-x64-r5xx-beta.exe
+      innoextract -q ./setup.exe
+      rm -r ./tmp; rm -rf appData; mv 'code$fUser' appData
+      sed -i '/Hub Name/d' ./appData/Favorites.xml
+      sed -i -e 's/<Settings>/<Settings><AutoFollow type="int">0<\/AutoFollow><AutoUpdateEnable type="int">0<\/AutoUpdateEnable><AutoUpdateRunOnStartup type="int">0<\/AutoUpdateRunOnStartup>/g' ./appData/DCPlusPlus.xml
+      mkdir wine-platform
+      mkdir bin
+      mkdir -p usr/share/pixmaps
+      mkdir -p usr/share/applications
+      mkdir -p "winedata/Application Data/FlylinkDC++"
+      mkdir -p "usr/share/flylinkdcpp-dc/Settings"
+      cp -R ./appData/* "winedata/Application Data/FlylinkDC++/"
+      cp -R ./app/* "usr/share/flylinkdcpp-dc/"
+      cp flylinkdcpp-dc ./bin
+      cp -R -p ./bin $SNAPCRAFT_PART_INSTALL
+      cp -R -p ./usr $SNAPCRAFT_PART_INSTALL
+      cp -R -p ./wine-platform $SNAPCRAFT_PART_INSTALL
+      cp -R -p ./winedata $SNAPCRAFT_PART_INSTALL
+    stage:
+      - bin
+      - usr
+      - wine-platform
+      - winedata
+    build-packages: [wget, innoextract]
